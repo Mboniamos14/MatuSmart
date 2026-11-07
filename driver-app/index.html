@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MatuSmart Driver</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #16a34a;
+      --amber:  #d97706;
+      --red:    #dc2626;
+      --dark:   #111827;
+      --card:   #1f2937;
+      --border: #374151;
+      --text:   #f9fafb;
+      --muted:  #9ca3af;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    header .logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #16a34a, #065f46);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    header h1 { font-size: 20px; font-weight: 700; }
+    header p  { font-size: 12px; color: var(--muted); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+
+    input, select {
+      width: 100%;
+      background: #111827;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: var(--text);
+      font-size: 15px;
+      margin-bottom: 12px;
+      -webkit-appearance: none;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--green);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+
+    .btn:active { opacity: 0.8; }
+
+    .btn-green  { background: var(--green); color: #fff; }
+    .btn-amber  { background: var(--amber); color: #fff; }
+    .btn-red    { background: var(--red);   color: #fff; }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    /* Status indicator */
+    .status-dot {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .dot-green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot-amber  { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+    .dot-red    { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+    .dot-grey   { background: var(--muted); }
+
+    /* Tracking status card */
+    #track-status {
+      font-size: 14px;
+      line-height: 2;
+    }
+
+    .metric-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding: 8px 0;
+      font-size: 14px;
+    }
+
+    .metric-row:last-child { border-bottom: none; }
+    .metric-val { font-weight: 700; font-size: 16px; color: var(--text); }
+
+    /* Log */
+    #log {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--muted);
+      max-height: 150px;
+      overflow-y: auto;
+      line-height: 1.8;
+    }
+
+    #log .ok  { color: #4ade80; }
+    #log .err { color: #f87171; }
+    #log .inf { color: #60a5fa; }
+
+    /* Passenger counter */
+    .counter-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .counter-btn {
+      width: 44px; height: 44px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--dark);
+      color: var(--text);
+      font-size: 22px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    #pax-display {
+      flex: 1;
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .pax-label { font-size: 11px; color: var(--muted); text-align: center; margin-top: 2px; }
+
+    .hidden { display: none !important; }
+
+    /* Speed display */
+    .speed-big {
+      font-size: 48px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1;
+      color: var(--green);
+    }
+
+    .speed-unit { text-align: center; font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">🚌</div>
+    <div>
+      <h1>MatuSmart Driver</h1>
+      <p>GPS Tracker for Matatu Fleet</p>
+    </div>
+  </header>
+
+  <!-- Setup (shown before tracking) -->
+  <div id="setup-screen">
+    <div class="card">
+      <h2>Matatu Setup</h2>
+
+      <label>Number Plate</label>
+      <input type="text" id="plate" placeholder="e.g. KCA 456B" maxlength="10"
+             style="text-transform:uppercase; font-size:20px; font-weight:700; letter-spacing:2px;">
+
+      <label>Route</label>
+      <select id="route">
+        <option value="R2">R2  — CBD – Westlands (KBS)</option>
+        <option value="R9">R9  — Karen – CBD (Karen Express SACCO)</option>
+        <option value="R11">R11 — Industrial Area – CBD (Umoinner SACCO)</option>
+        <option value="R15">R15 — Githurai 44 – CBD (Githurai United SACCO)</option>
+        <option value="R23">R23 — South B/C – CBD (Citi Hoppa Ltd)</option>
+        <option value="R33">R33 — Eastleigh – CBD (Super Metro SACCO)</option>
+        <option value="R34">R34 — CBD Circular (Double M SACCO)</option>
+        <option value="R44">R44 — Westlands – Ngara (KBS SACCO)</option>
+        <option value="R46">R46 — Kasarani Express (Metro Trans SACCO Ltd)</option>
+        <option value="R48">R48 — TRM – CBD (Metro Trans SACCO Ltd)</option>
+        <option value="R58">R58 — Eastleigh Express (2NK SACCO)</option>
+        <option value="R60">R60 — Kayole – CBD (Kayole Zone SACCO)</option>
+        <option value="R100">R100 — Rongai – CBD (Rongai Matatu SACCO)</option>
+        <option value="R105">R105 — Kawangware – CBD (Ngong Road Shuttle SACCO)</option>
+      </select>
+
+      <label>Backend Server URL</label>
+      <input type="url" id="api-url" value="http://localhost:8000"
+             placeholder="http://your-server:8000">
+    </div>
+
+    <button class="btn btn-green" onclick="startTracking()">🟢 Start GPS Tracking</button>
+  </div>
+
+  <!-- Tracking screen (shown while tracking) -->
+  <div id="tracking-screen" class="hidden">
+
+    <!-- Status -->
+    <div class="card">
+      <h2>Tracking Status</h2>
+      <div id="track-status">
+        <span id="status-dot" class="status-dot dot-amber"></span>
+        <span id="status-text">Acquiring GPS…</span>
+      </div>
+    </div>
+
+    <!-- Speed + Coords -->
+    <div class="card">
+      <h2>Live GPS</h2>
+      <div class="speed-big" id="speed-display">0</div>
+      <div class="speed-unit">km/h</div>
+      <div style="margin-top:12px;">
+        <div class="metric-row">
+          <span style="color:var(--muted)">Latitude</span>
+          <span class="metric-val" id="lat-display">—</span>
+        </div>
+        <div class="metric-row">
+          <span style="color:var(--muted)">Longitude</span>
+          <span class="metric-val" id="lng-display">—</span>
+        </div>
+        <div class="metric-row">
+          <span style="color:var(--muted)">Heading</span>
+          <span class="metric-val" id="hdg-display">—</span>
+        </div>
+        <div class="metric-row">
+          <span style="color:var(--muted)">Last Ping</span>
+          <span class="metric-val" id="ping-time">—</span>
+        </div>
+        <div class="metric-row">
+          <span style="color:var(--muted)">Pings Sent</span>
+          <span class="metric-val" id="ping-count">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Passenger count -->
+    <div class="card">
+      <h2>Passengers on Board</h2>
+      <div class="counter-row">
+        <button class="counter-btn" onclick="changePax(-1)">−</button>
+        <div>
+          <div id="pax-display">0</div>
+          <div class="pax-label">/ <span id="cap-display">14</span> seats</div>
+        </div>
+        <button class="counter-btn" onclick="changePax(+1)">+</button>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="card">
+      <h2>Activity Log</h2>
+      <div id="log"></div>
+    </div>
+
+    <button class="btn btn-red" onclick="stopTracking()" style="margin-bottom:16px;">
+      🔴 Stop Tracking
+    </button>
+  </div>
+
+  <script>
+    // When served by the backend (/driver), default the server URL to this origin
+    if (location.protocol.startsWith("http")) {
+      document.getElementById("api-url").value = location.origin;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let watchId      = null;
+    let pingInterval = null;
+    let lastPos      = null;
+    let pingCount    = 0;
+    let passengers   = 0;
+    let capacity     = 14;
+    let apiUrl       = "http://localhost:8000";
+    let plate        = "";
+
+    // ── UI helpers ───────────────────────────────────────────────────────────
+    function log(msg, type = "inf") {
+      const el  = document.getElementById("log");
+      const now = new Date().toLocaleTimeString("en-KE", {hour12: false});
+      el.innerHTML = `<div class="${type}">[${now}] ${msg}</div>` + el.innerHTML;
+      if (el.children.length > 50) el.removeChild(el.lastChild);
+    }
+
+    function setStatus(text, dotClass) {
+      document.getElementById("status-text").textContent = text;
+      const dot = document.getElementById("status-dot");
+      dot.className = `status-dot ${dotClass}`;
+    }
+
+    function changePax(delta) {
+      passengers = Math.max(0, Math.min(capacity, passengers + delta));
+      document.getElementById("pax-display").textContent = passengers;
+      const pct = passengers / capacity;
+      document.getElementById("pax-display").style.color =
+        pct > 0.9 ? "#f87171" : pct > 0.6 ? "#fbbf24" : "#4ade80";
+    }
+
+    // ── GPS ping ─────────────────────────────────────────────────────────────
+    async function sendPing() {
+      if (!lastPos) return;
+
+      const payload = {
+        plate:      plate,
+        lat:        lastPos.coords.latitude,
+        lng:        lastPos.coords.longitude,
+        speed_kmh:  (lastPos.coords.speed || 0) * 3.6,  // m/s → km/h
+        heading:    lastPos.coords.heading || 0,
+        passengers: passengers,
+        timestamp:  new Date().toISOString()
+      };
+
+      try {
+        const res = await fetch(`${apiUrl}/api/gps/ping`, {
+          method:  "POST",
+          headers: {"Content-Type": "application/json"},
+          body:    JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          pingCount++;
+          document.getElementById("ping-count").textContent = pingCount;
+          document.getElementById("ping-time").textContent =
+            new Date().toLocaleTimeString("en-KE", {hour12: false});
+          setStatus(`Active — ${plate}`, "dot-green");
+          log(`📡 Ping #${pingCount} sent (${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)})`, "ok");
+        } else {
+          const txt = await res.text();
+          log(`⚠️ Server error ${res.status}: ${txt}`, "err");
+          setStatus("Server error", "dot-amber");
+        }
+      } catch (err) {
+        log(`❌ Network error: ${err.message}`, "err");
+        setStatus("Offline — pings queued", "dot-red");
+      }
+    }
+
+    // ── Start tracking ────────────────────────────────────────────────────────
+    function startTracking() {
+      plate  = document.getElementById("plate").value.trim().toUpperCase();
+      apiUrl = document.getElementById("api-url").value.trim().replace(/\/$/, "");
+
+      if (!plate) { alert("Enter your matatu plate number."); return; }
+      if (!("geolocation" in navigator)) {
+        alert("GPS not available on this device.");
+        return;
+      }
+
+      document.getElementById("setup-screen").classList.add("hidden");
+      document.getElementById("tracking-screen").classList.remove("hidden");
+      document.getElementById("cap-display").textContent = capacity;
+
+      setStatus("Acquiring GPS signal…", "dot-amber");
+      log("🚌 Tracker started for " + plate, "inf");
+
+      // Watch GPS position
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          lastPos = pos;
+          const spd = (pos.coords.speed || 0) * 3.6;
+          document.getElementById("speed-display").textContent = Math.round(spd);
+          document.getElementById("lat-display").textContent   = pos.coords.latitude.toFixed(6);
+          document.getElementById("lng-display").textContent   = pos.coords.longitude.toFixed(6);
+          document.getElementById("hdg-display").textContent   = pos.coords.heading
+            ? Math.round(pos.coords.heading) + "°" : "—";
+
+          if (setStatus.dot !== "dot-green") setStatus("GPS locked", "dot-green");
+        },
+        (err) => {
+          log(`❌ GPS error: ${err.message}`, "err");
+          setStatus("GPS error", "dot-red");
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+      );
+
+      // Send ping every 10 seconds
+      pingInterval = setInterval(sendPing, 10000);
+      sendPing(); // immediate first ping
+    }
+
+    // ── Stop tracking ─────────────────────────────────────────────────────────
+    function stopTracking() {
+      if (watchId)      navigator.geolocation.clearWatch(watchId);
+      if (pingInterval) clearInterval(pingInterval);
+
+      watchId = pingInterval = null;
+      document.getElementById("tracking-screen").classList.add("hidden");
+      document.getElementById("setup-screen").classList.remove("hidden");
+      setStatus("Stopped", "dot-grey");
+      log("🔴 Tracking stopped after " + pingCount + " pings", "inf");
+      pingCount = 0;
+    }
+
+    // Keep screen awake while tracking (Android Chrome only)
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ("wakeLock" in navigator) {
+          wakeLock = await navigator.wakeLock.request("screen");
+          log("💡 Screen wake lock acquired", "inf");
+        }
+      } catch (e) { /* not critical */ }
+    }
+
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "visible" && pingInterval && !wakeLock) {
+        await requestWakeLock();
+      }
+    });
+  </script>
+</body>
+</html>
