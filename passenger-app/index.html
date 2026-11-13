@@ -433,6 +433,11 @@
       document.getElementById("nearby-prompt").classList.add("hidden");
     }
 
+    // Large networks: show the first 60 (nearest first if location is on); search finds the rest
+    const MAX_CARDS = 60;
+    const total = sorted.length;
+    if (total > MAX_CARDS) sorted = sorted.slice(0, MAX_CARDS);
+
     sorted.forEach(stop => {
       const div = document.createElement("div");
       div.className = "stop-card";
@@ -461,6 +466,14 @@
       div.addEventListener("click", () => toggleETA(stop.id, div));
       list.appendChild(div);
     });
+
+    if (total > MAX_CARDS) {
+      const more = document.createElement("div");
+      more.className = "stop-meta";
+      more.style.cssText = "text-align:center;padding:14px;";
+      more.textContent = `Showing ${MAX_CARDS} of ${total} stops — use search to find others`;
+      list.appendChild(more);
+    }
   }
 
   async function toggleETA(stopId, card) {

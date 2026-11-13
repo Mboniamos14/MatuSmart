@@ -237,6 +237,14 @@ MATATUS_SEED = [
     {"plate": "KCK 890A", "route_id": "R105", "sacco": "Ngong Road Shuttle SACCO",   "capacity": 14},
 ]
 
+# ── Real Nairobi network (Digital Matatus GTFS) ───────────────────────────────
+# If backend/gtfs_seed.py exists (made by tools/import_gtfs.py) it replaces the
+# hand-made seed above with the real stops and routes. Delete that file to go back.
+try:
+    from gtfs_seed import STOPS_SEED, ROUTES_SEED, MATATUS_SEED  # noqa: F811
+except ImportError:
+    pass
+
 
 # ── DB dependency ─────────────────────────────────────────────────────────────
 def get_db():
@@ -258,11 +266,15 @@ def seed_database():
             for r in ROUTES_SEED:
                 db.add(models.Route(**r))
         if db.query(models.Matatu).count() == 0:
+            routes_by_id = {r["id"]: r for r in ROUTES_SEED}
+            stops_by_id  = {s["id"]: s for s in STOPS_SEED}
             for i, m in enumerate(MATATUS_SEED):
-                # Place matatu at first stop of its route
-                route = next((r for r in ROUTES_SEED if r["id"] == m["route_id"]), None)
-                stop_id = route["stop_ids"][0] if route else "archives"
-                stop = next((s for s in STOPS_SEED if s["id"] == stop_id), STOPS_SEED[0])
+                m = dict(m)
+                start = m.pop("start_index", 0)     # spread matatus along their route
+                # Place matatu at a stop of its route
+                route = routes_by_id.get(m["route_id"])
+                stop_id = route["stop_ids"][start % len(route["stop_ids"])] if route else "archives"
+                stop = stops_by_id.get(stop_id, STOPS_SEED[0])
                 db.add(models.Matatu(
                     **m,
                     lat=stop["lat"] + random.uniform(-0.002, 0.002),

@@ -37,6 +37,9 @@ matusmart/
 │   ├── models.py        ← SQLAlchemy ORM models
 │   ├── database.py      ← DB connection (SQLite dev / Postgres prod)
 │   ├── requirements.txt
+│   ├── gtfs_seed.py     ← real Nairobi stops/routes (generated, see "Real network data")
+│   ├── tools/
+│   │   └── import_gtfs.py   ← rebuilds gtfs_seed.py from a GTFS feed
 │   └── ml/
 │       └── demand.py    ← Demand prediction model (train + serve)
 ├── driver-app/
@@ -121,7 +124,7 @@ POST /api/gps/ping
 
 ### Fleet Status
 ```
-GET  /api/fleet              → all 73 matatus with live positions
+GET  /api/fleet              → all matatus with live positions (272 simulated on the real network)
 GET  /api/fleet/{plate}      → single matatu + GPS trail
 ```
 
@@ -149,6 +152,29 @@ PATCH /api/incidents/{id}/resolve
 ```
 WS   /ws                    → WebSocket: fleet_update, gps_ping, new_incident events
 ```
+
+---
+
+## Real network data (Digital Matatus)
+
+The stops and routes come from the **Digital Matatus GTFS feed** (University of Nairobi,
+Columbia University, MIT, Groupshot; 2019 survey, original release CC0):
+
+- 136 routes and 857 stops (the feed has ~4,300 stops; stops with the same name within 500 m are
+  merged, and long routes keep their 12 most-shared stops)
+- SACCO names are **not** in the feed, so routes show `SACCO TBC` until a SACCO is confirmed.
+  Add verified names in `SACCO_OVERRIDES` inside `tools/import_gtfs.py`.
+- Matatus named `SIM-001`, `SIM-002`... are **simulated demo vehicles**, not real registered vehicles.
+  Real plates will come from SACCOs that sign up.
+
+Rebuild from a fresh feed:
+```bash
+cd backend
+python tools/import_gtfs.py path/to/GTFS.zip --max-stops 12 --per-route 2
+del matusmart.db            # Windows (rm on Mac/Linux) so the new data reseeds
+python -m ml.demand         # retrain demand model for the new stops
+```
+Delete `backend/gtfs_seed.py` to go back to the small hand-made 14-route demo network.
 
 ---
 

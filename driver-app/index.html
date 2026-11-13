@@ -203,26 +203,11 @@
       <h2>Matatu Setup</h2>
 
       <label>Number Plate</label>
-      <input type="text" id="plate" placeholder="e.g. KCA 456B" maxlength="10"
+      <input type="text" id="plate" placeholder="e.g. SIM-001" maxlength="10"
              style="text-transform:uppercase; font-size:20px; font-weight:700; letter-spacing:2px;">
 
       <label>Route</label>
-      <select id="route">
-        <option value="R2">R2  — CBD – Westlands (KBS)</option>
-        <option value="R9">R9  — Karen – CBD (Karen Express SACCO)</option>
-        <option value="R11">R11 — Industrial Area – CBD (Umoinner SACCO)</option>
-        <option value="R15">R15 — Githurai 44 – CBD (Githurai United SACCO)</option>
-        <option value="R23">R23 — South B/C – CBD (Citi Hoppa Ltd)</option>
-        <option value="R33">R33 — Eastleigh – CBD (Super Metro SACCO)</option>
-        <option value="R34">R34 — CBD Circular (Double M SACCO)</option>
-        <option value="R44">R44 — Westlands – Ngara (KBS SACCO)</option>
-        <option value="R46">R46 — Kasarani Express (Metro Trans SACCO Ltd)</option>
-        <option value="R48">R48 — TRM – CBD (Metro Trans SACCO Ltd)</option>
-        <option value="R58">R58 — Eastleigh Express (2NK SACCO)</option>
-        <option value="R60">R60 — Kayole – CBD (Kayole Zone SACCO)</option>
-        <option value="R100">R100 — Rongai – CBD (Rongai Matatu SACCO)</option>
-        <option value="R105">R105 — Kawangware – CBD (Ngong Road Shuttle SACCO)</option>
-      </select>
+      <select id="route"><option value="">Loading routes…</option></select>
 
       <label>Backend Server URL</label>
       <input type="url" id="api-url" value="http://localhost:8000"
@@ -302,6 +287,21 @@
     if (location.protocol.startsWith("http")) {
       document.getElementById("api-url").value = location.origin;
     }
+
+    // Fill the route list from the backend (route is informational; the server matches by plate)
+    async function loadRoutes() {
+      const sel  = document.getElementById("route");
+      const base = document.getElementById("api-url").value.trim().replace(/\/$/, "");
+      try {
+        const res    = await fetch(`${base}/api/routes`);
+        const routes = await res.json();
+        sel.innerHTML = routes.map(r => `<option value="${r.id}">${r.id.replace(/^R/, "")} — ${r.name}</option>`).join("");
+      } catch (e) {
+        sel.innerHTML = '<option value="">Routes unavailable (check server URL)</option>';
+      }
+    }
+    document.addEventListener("DOMContentLoaded", loadRoutes);
+    document.getElementById("api-url").addEventListener("change", loadRoutes);
 
     // ── State ────────────────────────────────────────────────────────────────
     let watchId      = null;
