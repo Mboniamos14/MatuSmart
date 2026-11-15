@@ -35,7 +35,7 @@ class Matatu(Base):
     plate       = Column(String, unique=True, nullable=False, index=True)
     route_id    = Column(String, nullable=False)
     sacco       = Column(String)
-    capacity    = Column(Integer, default=14)
+    capacity    = Column(Integer, default=33)
     lat         = Column(Float, default=-1.2873)  # Kencom default
     lng         = Column(Float, default=36.8220)
     passengers  = Column(Integer, default=0)

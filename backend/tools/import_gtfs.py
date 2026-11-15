@@ -3,7 +3,7 @@ Convert the Digital Matatus GTFS feed into MatuSmart seed data.
 
 Usage (run from the backend/ folder):
     python tools/import_gtfs.py path/to/GTFS.zip            # or an extracted folder
-    python tools/import_gtfs.py GTFS.zip --max-stops 12 --per-route 2
+    python tools/import_gtfs.py GTFS.zip --max-stops 12 --per-route 2 --capacity 33
 
 Writes backend/gtfs_seed.py, which main.py loads automatically
 (STOPS_SEED, ROUTES_SEED, MATATUS_SEED, GTFS_PROFILES).
@@ -56,6 +56,7 @@ def main():
     ap.add_argument("gtfs", help="GTFS .zip or extracted folder")
     ap.add_argument("--max-stops", type=int, default=12, help="max stops kept per route")
     ap.add_argument("--per-route", type=int, default=2, help="simulated matatus per route")
+    ap.add_argument("--capacity", type=int, default=33, help="seats per matatu (33 = 33-seater)")
     ap.add_argument("--merge-km", type=float, default=0.5, help="merge same-name stops within this distance")
     ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "gtfs_seed.py"))
     args = ap.parse_args()
@@ -187,7 +188,7 @@ def main():
     for r in ROUTES:
         for i in range(args.per_route):
             k += 1
-            MATATUS.append({"plate": f"SIM-{k:03d}", "route_id": r["id"], "sacco": r["sacco"], "capacity": 14,
+            MATATUS.append({"plate": f"SIM-{k:03d}", "route_id": r["id"], "sacco": r["sacco"], "capacity": args.capacity,
                             "start_index": i * len(r["stop_ids"]) // args.per_route})
 
     with open(args.out, "w", encoding="utf-8") as f:

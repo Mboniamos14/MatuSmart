@@ -265,7 +265,7 @@
         <button class="counter-btn" onclick="changePax(-1)">−</button>
         <div>
           <div id="pax-display">0</div>
-          <div class="pax-label">/ <span id="cap-display">14</span> seats</div>
+          <div class="pax-label">/ <span id="cap-display">33</span> seats</div>
         </div>
         <button class="counter-btn" onclick="changePax(+1)">+</button>
       </div>
@@ -309,7 +309,7 @@
     let lastPos      = null;
     let pingCount    = 0;
     let passengers   = 0;
-    let capacity     = 14;
+    let capacity     = 33;
     let apiUrl       = "http://localhost:8000";
     let plate        = "";
 
@@ -388,6 +388,17 @@
       document.getElementById("setup-screen").classList.add("hidden");
       document.getElementById("tracking-screen").classList.remove("hidden");
       document.getElementById("cap-display").textContent = capacity;
+
+      // Use the seat count the server has for this plate (falls back to 33)
+      fetch(`${apiUrl}/api/fleet/${encodeURIComponent(plate)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => {
+          if (d && d.matatu && d.matatu.capacity) {
+            capacity = d.matatu.capacity;
+            document.getElementById("cap-display").textContent = capacity;
+          }
+        })
+        .catch(() => {});
 
       setStatus("Acquiring GPS signal…", "dot-amber");
       log("🚌 Tracker started for " + plate, "inf");
